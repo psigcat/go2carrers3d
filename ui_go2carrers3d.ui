@@ -540,7 +540,7 @@
          </size>
         </property>
         <property name="toolTip">
-         <string>open in external browser</string>
+         <string>obrir al navegador extern</string>
         </property>
         <property name="text">
          <string>Br</string>

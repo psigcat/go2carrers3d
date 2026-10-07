@@ -18,4 +18,6 @@ I.e. in debian/ubuntu sudo apt install python3-pyqt5.qtwebengine=5.15.6 or in wi
 
 ## License
 
-GPL 3.0 or later
+Plugin: [GPL 3.0 or later](LICENSE)
+
+Content: "3D Carrers del Institut Cartogràfic i Geològic de Catalunya (ICGC), bajo una licencia CC BY-NC-ND 4.0"

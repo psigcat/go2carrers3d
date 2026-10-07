@@ -88,7 +88,7 @@ class go2carrers3d(gui.QgsMapTool):
     def initGui(self):
         # Create actions that will start plugin configuration
         self.StreetviewAction = QtWidgets.QAction(QtGui.QIcon(os.path.join(os.path.dirname(__file__), 'res', 'icoStreetview.png')), \
-            self.tr("Click to open Carrers"), self.iface.mainWindow())
+            self.tr("Obrir panell Carrers 3D"), self.iface.mainWindow())
         #self.StreetviewAction = QtWidgets.QAction(QtGui.QIcon(":/plugins/go2carrers3d/res/icoStreetview.png"), \
         #    "Click to open Google Street View", self.iface.mainWindow())
         self.StreetviewAction.triggered.connect(self.StreetviewRun)
@@ -206,7 +206,7 @@ class go2carrers3d(gui.QgsMapTool):
     def setButtonBarSignals(self):
         #contextMenu
         contextMenu = QtWidgets.QMenu()
-        self.openInBrowserItem = contextMenu.addAction(QtGui.QIcon(os.path.join(self.dirPath,"res","browser.png")),self.tr("Open in external browser"))
+        self.openInBrowserItem = contextMenu.addAction(QtGui.QIcon(os.path.join(self.dirPath,"res","browser.png")),self.tr("Obrir al navegador extern"))
         self.openInBrowserItem.triggered.connect(self.openInBrowserAction)
         # self.takeSnapshopItem = contextMenu.addAction(QtGui.QIcon(os.path.join(self.dirPath,"res","images.png")),self.tr("Take a panorama snaphot"))
         # self.takeSnapshopItem.triggered.connect(self.takeSnapshopAction)
@@ -214,17 +214,17 @@ class go2carrers3d(gui.QgsMapTool):
         self.digitizeItem.triggered.connect(self.digitizeAction)
         contextMenu.addSeparator()
         
-        optionsMenu = contextMenu.addMenu(self.tr("Options"))
-        self.showCoverage = optionsMenu.addAction(self.tr("Show Carrers 3D coverage"))
+        optionsMenu = contextMenu.addMenu(self.tr("Opcions"))
+        self.showCoverage = optionsMenu.addAction(self.tr("Mostrar capa Carrers 3D"))
         self.showCoverage.setCheckable(True)
         self.showCoverage.setChecked(False)
-        self.zoomToCoverage = optionsMenu.addAction(self.tr("Zoom to coverage"))
+        self.zoomToCoverage = optionsMenu.addAction(self.tr("Zoom a la capa"))
         self.zoomToCoverage.triggered.connect(self.zoomToCoverageAction)        
         optionsMenu.addSeparator()
 
         self.showCoverage.toggled.connect(self.showCoverageLayer)
         contextMenu.addSeparator()
-        self.showWebInspector = contextMenu.addAction(self.tr("Show web inspector for debugging"))
+        self.showWebInspector = contextMenu.addAction(self.tr("Mostrar inspector web per depurar"))
         self.showWebInspector.triggered.connect(self.showWebInspectorAction)
         self.view.btnMenu.setIcon(QtGui.QIcon(os.path.join(self.dirPath,"res","down.png")))
         self.view.btnMenu.setMenu(contextMenu)
