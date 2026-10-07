@@ -2,6 +2,8 @@
 
 A QGIS plugin for [ICGC Carrers 3D](https://visors.icgc.cat/catalunya-digital/carrers-3d/) interaction.
 
+Forked from [go2streetview](https://github.com/enricofer/go2streetview).
+
 ## Dependencies
 
 Ensure that pyqt5 QtWebEngine bindings > 5.15.6 are installed to prevent ImportError exception:

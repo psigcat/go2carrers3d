@@ -1,18 +1,22 @@
 [general]
 name=go2carrers3d
 qgisMinimumVersion=3.36
-qgisMaximumVersion=3.98
+qgisMaximumVersion=3.99
 description=The plugin allows to get a window with Catalunya Digital Carrers 3D clicking and dragging the cursor on map to set location and direction of the desired view.
 version=0.1
-author=Gerald Kogler
+author=PSIG
 email=geraldo@servus.at
+license=GPL-3.0-or-later
 
 about = Go2carrers3d allows to get a window with Catalunya Digital Carrers 3D clicking and dragging the cursor on map to set location and direction of the desired view. 
 tags = icgc, carrers 3d, catalunya, streetview, snapshot, overlay, markers
 
-homepage=https://github.com/geraldo/go2carrers3d
-tracker=https://github.com/geraldo/go2carrers3d/issues
-repository=https://github.com/geraldo/go2carrers3d
+homepage=https://github.com/psigcat/go2carrers3d
+tracker=https://github.com/psigcat/go2carrers3d/issues
+repository=https://github.com/psigcat/go2carrers3d
 icon=icoStreetview.png
 experimental=False
 deprecated=False
+
+changelog=
+	0.1 - initial commit forked from go2streetview
