@@ -19,7 +19,7 @@
  ***************************************************************************/
 """
 from qgis.PyQt.QtWidgets import QApplication
-from PyQt5 import Qt, QtCore, QtWidgets, QtGui, QtWebEngineWidgets, QtXml, QtNetwork, uic
+from qgis.PyQt import Qt, QtCore, QtWidgets, QtGui, QtWebEngineWidgets, QtXml, QtNetwork, uic
 from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEnginePage
 from PyQt5.QtWebChannel import QWebChannel
 from PyQt5.QtCore import QSettings, qVersion, QCoreApplication, Qt
