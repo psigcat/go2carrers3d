@@ -5,6 +5,7 @@
                               -------------------
         begin                : 2014-03-29
         copyright            : (C) 2014 enrico ferreguti
+                             : (C) 2026 gerald kogler
         email                : enricofer@gmail.com
  ***************************************************************************/
 
