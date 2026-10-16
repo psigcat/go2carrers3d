@@ -19,8 +19,7 @@
  ***************************************************************************/
 """
 from qgis.PyQt.QtWidgets import QApplication
-from qgis.PyQt import Qt, QtCore, QtWidgets, QtGui, QtWebEngineWidgets, QtXml, QtNetwork, uic
-from qgis.PyQt.QtWebEngineWidgets import QWebEngineView, QWebEnginePage
+from qgis.PyQt import Qt, QtCore, QtWidgets, QtGui, QtWebEngineWidgets, QtNetwork
 from qgis.PyQt.QtCore import QSettings, qVersion, QCoreApplication, Qt
 from qgis.PyQt.QtCore import pyqtSlot
 from qgis import core, utils, gui

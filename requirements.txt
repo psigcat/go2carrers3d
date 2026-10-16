@@ -1,1 +1,1 @@
-PyQtWebEngine
+PyQtWebEngine>=5.15.6
