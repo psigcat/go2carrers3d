@@ -13,9 +13,7 @@ In order to find the covered area, do the following:
 
 ## Dependencies
 
-The plugin depends on QtWebEngine, which isn't installed by default with QGIS. We defined QPIP as dependency using requirements.txt in order to preinstall PyQtWebEngine.
-
-In case it doesn't work as expected, ensure that pyqt5 QtWebEngine bindings >= 5.15.6 are installed to prevent ImportError exception:
+The plugin depends on QtWebEngine, which isn't installed by default with QGIS.
 
 I.e. in debian/ubuntu `sudo apt install python3-pyqt5.qtwebengine=5.15.6` or in windows with `pip install "PyQtWebEngine>=5.15.6"` or from Osgeo4w setup: 
 
@@ -24,6 +22,10 @@ I.e. in debian/ubuntu `sudo apt install python3-pyqt5.qtwebengine=5.15.6` or in 
 ## Changelog
 
 - 0.1: Initial version derived from go2streetview
+
+## Future plans
+
+For some reasons, using QPIP as dependency manager using requirements.txt in order to preinstall PyQtWebEngine doesn't work on Windows 10. Still do need some test to make install more painless.
 
 ## License
 

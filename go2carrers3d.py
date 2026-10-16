@@ -45,10 +45,6 @@ import configparser
 import datetime
 import re
 
-DEBUG_PORT = '5588'
-DEBUG_URL = 'http://127.0.0.1:%s' % DEBUG_PORT
-os.environ['QTWEBENGINE_REMOTE_DEBUGGING'] = DEBUG_PORT
-
 H_SV_CAMERA = 2.7
 
 
