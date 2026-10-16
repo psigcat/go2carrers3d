@@ -36,8 +36,6 @@ import math
 import time
 import json
 import configparser
-import sip
-import pathlib  
 import datetime
 import re
 
