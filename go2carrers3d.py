@@ -191,13 +191,9 @@ class go2carrers3d(gui.QgsMapTool):
                 panes[1].style.width = '100%';   // Expands the panorama
             }
             """
-            
+
             # Execute the script in the QGIS web viewer
             self.view.SV.page().runJavaScript(js_code)
-            
-            # (Optional) If you want the web inspector for debugging, keep this:
-            # self.view.SV.page().setDevToolsPage(self.inspector.page())
-            # self.inspector.show()
 
 
     def setButtonBarSignals(self):
@@ -307,8 +303,7 @@ class go2carrers3d(gui.QgsMapTool):
 
 
     def openInBrowserAction(self):
-        if self.view.SV.isVisible():
-            self.openInBrowserSV()
+        self.openInBrowserSV()
 
 
     def unload(self):
@@ -377,8 +372,7 @@ class go2carrers3d(gui.QgsMapTool):
 
     def pollCarrers3D(self):
         """Requests the current URL from the web engine."""
-        if self.view.SV.isVisible():
-            self.view.SV.page().runJavaScript("window.location.href", self.processUrl)
+        self.view.SV.page().runJavaScript("window.location.href", self.processUrl)
 
 
     def processUrl(self, url_str):
@@ -537,13 +531,6 @@ class go2carrers3d(gui.QgsMapTool):
         self.view.buttonBar.move(self.viewWidth-252,0)
 
 
-    def switch2SV(self):
-        # Procedure to operate switch to carrers3d dialog set
-        self.view.SV.show()
-        self.takeSnapshopItem.setDisabled(False)
-        self.view.setWindowTitle("Carrers 3D")
-
-
     def openExternalUrl(self, url):
         core.QgsMessageLog.logMessage(url.toString(), tag="go2carrers3d", level=core.Qgis.Info)
         webbrowser.open_new(url.toString())
@@ -656,7 +643,6 @@ class go2carrers3d(gui.QgsMapTool):
 
         self.gswDialogUrl = f"https://visors.icgc.cat/catalunya-digital/carrers-3d/{route}"
 
-        gswTitle = "Carrers 3D"
         core.QgsMessageLog.logMessage(QtCore.QUrl(self.gswDialogUrl).toString(), tag="go2carrers3d", level=core.Qgis.Info)
         self.httpConnecting = True
         self.view.SV.setUrl(QtCore.QUrl(QtCore.QDir.fromNativeSeparators(self.gswDialogUrl)))
