@@ -20,15 +20,22 @@
 """
 from qgis.PyQt.QtWidgets import QApplication
 from qgis.PyQt import Qt, QtCore, QtWidgets, QtGui, QtWebEngineWidgets, QtXml, QtNetwork, uic
-from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEnginePage
-from PyQt5.QtWebChannel import QWebChannel
-from PyQt5.QtCore import QSettings, qVersion, QCoreApplication, Qt
-from PyQt5.QtCore import pyqtSlot
+from qgis.PyQt.QtWebEngineWidgets import QWebEngineView, QWebEnginePage
+from qgis.PyQt.QtCore import QSettings, qVersion, QCoreApplication, Qt
+from qgis.PyQt.QtCore import pyqtSlot
 from qgis import core, utils, gui
 from qgis.utils import iface, qgsfunction, plugins
 from string import digits
 from .go2carrers3dDialog import go2carrers3dDialog, dumWidget
 from .transformgeom import transformGeometry
+
+try:
+    from qgis.PyQt.QtWebChannel import QWebChannel
+except ImportError:
+    try:
+        from PyQt6.QtWebChannel import QWebChannel
+    except ImportError:
+        from PyQt5.QtWebChannel import QWebChannel
 
 import webbrowser
 import os
