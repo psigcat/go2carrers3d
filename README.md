@@ -17,7 +17,7 @@ The plugin depends on QtWebEngine, which isn't installed by default with QGIS. W
 
 In case it doesn't work as expected, ensure that pyqt5 QtWebEngine bindings >= 5.15.6 are installed to prevent ImportError exception:
 
-I.e. in debian/ubuntu `sudo apt install python3-pyqt5.qtwebengine=5.15.6` or in windows with `pip install PyQtWebEngine` or from Osgeo4w setup: 
+I.e. in debian/ubuntu `sudo apt install python3-pyqt5.qtwebengine=5.15.6` or in windows with `pip install "PyQtWebEngine>=5.15.6"` or from Osgeo4w setup: 
 
 ![qtwebengine](https://github.com/enricofer/go2streetview/raw/master/docs/setup_osgeo4w.png)
 
