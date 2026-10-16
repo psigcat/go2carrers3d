@@ -31,7 +31,6 @@ from .go2carrers3dDialog import go2carrers3dDialog, dumWidget
 from .transformgeom import transformGeometry
 
 import webbrowser
-import tempfile
 import os
 import math
 import time
@@ -72,6 +71,7 @@ class go2carrers3d(gui.QgsMapTool):
         gui.QgsMapTool.__init__(self, self.canvas)
         self.S = QtCore.QSettings()
 
+
     def tr(self, message):  # pylint: disable=no-self-use
         """Get the translation for a string using Qt translation API.
 
@@ -86,16 +86,16 @@ class go2carrers3d(gui.QgsMapTool):
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
         return QCoreApplication.translate('go2carrers3d', message)
 
+
     def initGui(self):
         # Create actions that will start plugin configuration
-        self.StreetviewAction = QtWidgets.QAction(QtGui.QIcon(os.path.join(os.path.dirname(__file__), 'res', 'icoStreetview.png')), \
+        self.Carrers3dAction = QtWidgets.QAction(QtGui.QIcon(os.path.join(os.path.dirname(__file__), 'res', 'icoStreetview.png')), \
             self.tr("Obrir panell Carrers 3D"), self.iface.mainWindow())
-        #self.StreetviewAction = QtWidgets.QAction(QtGui.QIcon(":/plugins/go2carrers3d/res/icoStreetview.png"), \
-        #    "Click to open Google Street View", self.iface.mainWindow())
-        self.StreetviewAction.triggered.connect(self.StreetviewRun)
+        #self.Carrers3dAction = QtWidgets.QAction(QtGui.QIcon(":/plugins/go2carrers3d/res/icoStreetview.png"), \
+        self.Carrers3dAction.triggered.connect(self.Carrers3dRun)
         # Add toolbar button and menu item
-        self.iface.addToolBarIcon(self.StreetviewAction)
-        self.iface.addPluginToWebMenu(self.tr("&go2carrers3d"), self.StreetviewAction)
+        self.iface.addToolBarIcon(self.Carrers3dAction)
+        self.iface.addPluginToWebMenu(self.tr("&go2carrers3d"), self.Carrers3dAction)
         self.dirPath = os.path.dirname( os.path.abspath( __file__ ) )
         self.actualPOV = {}
         self.view = go2carrers3dDialog()
@@ -116,18 +116,11 @@ class go2carrers3d(gui.QgsMapTool):
         self.channel = QWebChannel()
         self.channel.registerObject('backend', self)
         self.view.SV.page().setWebChannel(self.channel)
-        self.view.BE.page().setWebChannel(self.channel)
-        
 
         self.view.SV.settings().setAttribute(QtWebEngineWidgets.QWebEngineSettings.JavascriptEnabled, True)
         self.view.SV.settings().setAttribute(QtWebEngineWidgets.QWebEngineSettings.LocalContentCanAccessRemoteUrls, True)
         self.view.SV.settings().setAttribute(QtWebEngineWidgets.QWebEngineSettings.ErrorPageEnabled, True)
         self.view.SV.settings().setAttribute(QtWebEngineWidgets.QWebEngineSettings.PluginsEnabled, True)
-
-        self.view.BE.settings().setAttribute(QtWebEngineWidgets.QWebEngineSettings.JavascriptEnabled, True)
-        self.view.BE.settings().setAttribute(QtWebEngineWidgets.QWebEngineSettings.LocalContentCanAccessRemoteUrls, True)
-        self.view.BE.settings().setAttribute(QtWebEngineWidgets.QWebEngineSettings.ErrorPageEnabled, True)
-        self.view.BE.settings().setAttribute(QtWebEngineWidgets.QWebEngineSettings.PluginsEnabled, True)
 
         self.view.SV.loadFinished.connect(self.handleLoaded)
 
@@ -165,8 +158,6 @@ class go2carrers3d(gui.QgsMapTool):
         self.syncTimer.setInterval(250) # Check every 250 milliseconds
         self.syncTimer.timeout.connect(self.pollCarrers3D)
 
-        # print("zoomToCoverageAction")
-        # self.zoomToCoverageAction()
 
     def handleLoaded(self, ok):
         if ok:
@@ -204,15 +195,12 @@ class go2carrers3d(gui.QgsMapTool):
             # self.view.SV.page().setDevToolsPage(self.inspector.page())
             # self.inspector.show()
 
+
     def setButtonBarSignals(self):
         #contextMenu
         contextMenu = QtWidgets.QMenu()
         self.openInBrowserItem = contextMenu.addAction(QtGui.QIcon(os.path.join(self.dirPath,"res","browser.png")),self.tr("Obrir al navegador extern"))
         self.openInBrowserItem.triggered.connect(self.openInBrowserAction)
-        # self.takeSnapshopItem = contextMenu.addAction(QtGui.QIcon(os.path.join(self.dirPath,"res","images.png")),self.tr("Take a panorama snaphot"))
-        # self.takeSnapshopItem.triggered.connect(self.takeSnapshopAction)
-        self.digitizeItem = contextMenu.addAction(QtGui.QIcon(os.path.join(self.dirPath,"res","marker_green.png")),self.tr("Digitize"))
-        self.digitizeItem.triggered.connect(self.digitizeAction)
         contextMenu.addSeparator()
         
         optionsMenu = contextMenu.addMenu(self.tr("Opcions"))
@@ -224,24 +212,9 @@ class go2carrers3d(gui.QgsMapTool):
         optionsMenu.addSeparator()
 
         self.showCoverage.toggled.connect(self.showCoverageLayer)
-        contextMenu.addSeparator()
-        self.showWebInspector = contextMenu.addAction(self.tr("Mostrar inspector web per depurar"))
-        self.showWebInspector.triggered.connect(self.showWebInspectorAction)
         self.view.btnMenu.setIcon(QtGui.QIcon(os.path.join(self.dirPath,"res","down.png")))
         self.view.btnMenu.setMenu(contextMenu)
         self.view.btnMenu.setPopupMode(QtWidgets.QToolButton.InstantPopup)
-
-
-    def showWebInspectorAction(self):
-        self.inspector = QWebEngineView()
-        self.inspector.setWindowTitle('Web Inspector')
-        self.inspector.load(QtCore.QUrl(DEBUG_URL))
-        if self.view.SV.isVisible():
-            self.view.SV.page().setDevToolsPage(self.inspector.page())
-        else:
-            self.view.BE.page().setDevToolsPage(self.inspector.page())
-        self.inspector.show()
-        self.inspector.raise_()
 
 
     def showCoverageLayer(self): 
@@ -264,6 +237,7 @@ class go2carrers3d(gui.QgsMapTool):
             except:
                 pass
 
+
     def zoomToCoverageAction(self):
         """Zooms the QGIS map canvas to the approximate bounding box of Catalunya."""
         # Define Catalunya's bounding box in EPSG:4326 (WGS 84)
@@ -282,29 +256,32 @@ class go2carrers3d(gui.QgsMapTool):
         self.iface.mapCanvas().setExtent(rect_canvas)
         self.iface.mapCanvas().refresh()
 
+
     def scanForCoverageLayer(self):
         return
         #used for catching coverage layer if saved along with projectS
         for layer_id,layer in core.QgsProject.instance().mapLayers().items():
-            if layer.type() == core.QgsMapLayer.PluginLayer and layer.id()[:19] == "Streetview_coverage":
+            if layer.type() == core.QgsMapLayer.PluginLayer and layer.id()[:19] == "Carrers3d_coverage":
                 self.showCoverage.blockSignals ( True )
                 self.showCoverage.setChecked(True)
                 self.showCoverage.blockSignals ( False )
                 self.coverageLayerId = layer.id()
 
+
     def mapRotationChanged(self,r):
         #unused landing method for rotationChanged signal.
         return
+
 
     def getNearestSVLocation(self,lon,lat):
         js = "this.getNearestSVLocation(%f,%f)" %(lon,lat)
         if not self.pointWgs84:
             self.pointWgs84 = core.QgsPointXY(lon,lat)
             self.heading = 0
-            self.StreetviewRun()
+            self.Carrers3dRun()
             self.openSVDialog()
             time.sleep(1)
-            self.StreetviewRun()
+            self.Carrers3dRun()
             delay = 4
         else:
             delay = 4
@@ -324,20 +301,11 @@ class go2carrers3d(gui.QgsMapTool):
     def aboutAction(self):
         self.licenceDlg.show()
 
-    def switchViewAction(self):
-        if self.view.SV.isVisible():
-            self.switch2BE()
-        else:
-            self.switch2SV()
 
     def openInBrowserAction(self):
         if self.view.SV.isVisible():
             self.openInBrowserSV()
-        else:
-            self.openInBrowserBE()
 
-    def digitizeAction(self):
-        self.takeSnapshotSV(type="digitize")
 
     def unload(self):
         self.syncTimer.stop()
@@ -371,14 +339,12 @@ class go2carrers3d(gui.QgsMapTool):
             self.aperture.reset()
         except:
             pass
-        self.iface.removePluginMenu("&go2carrers3d",self.StreetviewAction)
-        self.iface.removeToolBarIcon(self.StreetviewAction)
+        self.iface.removePluginMenu("&go2carrers3d",self.Carrers3dAction)
+        self.iface.removeToolBarIcon(self.Carrers3dAction)
         self.iface.removeDockWidget(self.apdockwidget)
 
         self.showCoverage.setChecked(False)
 
-        # core.QgsExpression.unregisterFunction('get_carrers3d_pov')
-        # core.QgsExpression.unregisterFunction('get_carrers3d_url')
 
     @pyqtSlot(str)
     def catchJSevents(self,status):
@@ -409,6 +375,7 @@ class go2carrers3d(gui.QgsMapTool):
         """Requests the current URL from the web engine."""
         if self.view.SV.isVisible():
             self.view.SV.page().runJavaScript("window.location.href", self.processUrl)
+
 
     def processUrl(self, url_str):
         """Parses the URL to extract lat, lon, and heading, and updates the QGIS map."""
@@ -445,7 +412,6 @@ class go2carrers3d(gui.QgsMapTool):
 
 
     def setPosition(self,forcePosition = None):
-        #if self.apdockwidget.widget().__dict__ == self.dumView.__dict__ or not self.apdockwidget.isVisible():
         if not self.apdockwidget.isVisible():
           return
         
@@ -494,19 +460,18 @@ class go2carrers3d(gui.QgsMapTool):
             dlonlat = self.transformToWGS84(self.digitizePosition.asGeometry().asPoint())
             self.actualPOV['dlon'] = dlonlat.x()
             self.actualPOV['dlat'] = dlonlat.y()
-            self.view.SV.page().runJavaScript("this.enableDigitizeCursor(true)")
-            self.digitizeItem.setEnabled(True)
+            #self.view.SV.page().runJavaScript("this.enableDigitizeCursor(true)")
         else:
             self.actualPOV['dlon'] = None
             self.actualPOV['dlat'] = None
-            self.view.SV.page().runJavaScript("this.enableDigitizeCursor(false)")
-            self.digitizeItem.setEnabled(False)
+            #self.view.SV.page().runJavaScript("this.enableDigitizeCursor(false)")
 
 
     def closeDialog(self):
         self.position.reset()
         self.aperture.reset()
         self.syncTimer.stop()
+
 
     def apdockChangeVisibility(self,vis):
         if not vis:
@@ -515,18 +480,19 @@ class go2carrers3d(gui.QgsMapTool):
             self.disableControlShape()
             self.syncTimer.stop()
             try:
-                self.StreetviewAction.setIcon(QtGui.QIcon(os.path.join(os.path.dirname(__file__), 'res', 'icoStreetview_gray.png')))
+                self.Carrers3dAction.setIcon(QtGui.QIcon(os.path.join(os.path.dirname(__file__), 'res', 'icoStreetview_gray.png')))
             except:
                 pass
 
         else:
-            self.StreetviewAction.setEnabled(True)
+            self.Carrers3dAction.setEnabled(True)
             self.syncTimer.start()
-            self.StreetviewAction.setIcon(QtGui.QIcon(os.path.join(os.path.dirname(__file__), 'res', 'icoStreetview.png')))
+            self.Carrers3dAction.setIcon(QtGui.QIcon(os.path.join(os.path.dirname(__file__), 'res', 'icoStreetview.png')))
             self.setPosition()
 
-    def resizeStreetview(self):
-        print("resizeStreetview")
+
+    def resizeCarrers3d(self):
+        print("resizeCarrers3d")
         #self.resizing = True
         self.resizeWidget()
         try:
@@ -535,61 +501,63 @@ class go2carrers3d(gui.QgsMapTool):
         except:
             pass
 
+
     def refreshWidget(self, new_lon, new_lat):
         if self.actualPOV['lat'] != 0.0:
+            # Keep the actualPOV in sync when dragging the red marker
+            self.actualPOV['lat'] = new_lat
+            self.actualPOV['lon'] = new_lon
+            self.actualPOV['heading'] = self.heading
+            
             route = f"#/info/mapiastreets/{new_lat},{new_lon}/{self.heading}/"
+
             self.gswDialogUrl = f"https://visors.icgc.cat/catalunya-digital/carrers-3d/{route}"
             self.view.SV.setUrl(QtCore.QUrl(self.gswDialogUrl))
+
 
     def endRefreshWidget(self):
         print("endRefreshWidget")
         self.view.SV.loadFinished.disconnect()
         self.refreshWidget(self.pointWgs84.x(), self.pointWgs84.y())
 
+
     def clickOn(self):
         self.explore()
+
 
     def resizeWidget(self):
         print("resizeWidget")
         self.viewHeight=self.view.size().height()
         self.viewWidth=self.view.size().width()
         self.view.SV.resize(self.viewWidth,self.viewHeight)
-        self.view.BE.resize(self.viewWidth,self.viewHeight)
         self.view.buttonBar.move(self.viewWidth-252,0)
 
-    def switch2BE(self):
-        # Procedure to operate switch to google maps dialog set
-        self.view.BE.show()
-        self.view.SV.hide()
-        #self.view.btnSwitchView.setIcon(QtGui.QIcon(os.path.join(self.dirPath, "res", "icoStreetview.png")))
-        #self.view.btnPrint.setDisabled(True)
-        self.takeSnapshopItem.setDisabled(True)
-        self.view.setWindowTitle("Google maps oblique")
 
     def switch2SV(self):
         # Procedure to operate switch to carrers3d dialog set
-        self.view.BE.hide()
         self.view.SV.show()
-        #self.view.btnSwitchView.setIcon(QtGui.QIcon(os.path.join(self.dirPath, "res", "icoGMaps.png")))
         self.takeSnapshopItem.setDisabled(False)
         self.view.setWindowTitle("Carrers 3D")
 
-    def openInBrowserBE(self):
-        # open an external browser with the Carrers 3D url for location
-        p = self.snapshotOutput.setCurrentPOV()
-        webbrowser.open_new(f"https://visors.icgc.cat/catalunya-digital/carrers-3d/#/panorama?lat={p['lat']}&lon={p['lon']}")
 
     def openExternalUrl(self, url):
         core.QgsMessageLog.logMessage(url.toString(), tag="go2carrers3d", level=core.Qgis.Info)
         webbrowser.open_new(url.toString())
 
+
     def openInBrowserSV(self):
         # open an external browser with the Carrers 3D url for current location
-        p = self.snapshotOutput.setCurrentPOV()
+        p = self.setCurrentPOV()
         webbrowser.open_new_tab(f"https://visors.icgc.cat/catalunya-digital/carrers-3d/#/panorama?lat={p['lat']}&lon={p['lon']}")
+
+
+    def setCurrentPOV(self):
+        return {k:str(v) for k,v in self.actualPOV.items()}
+
 
     def openInBrowserOnCTRLClick(self):
         webbrowser.open(f"https://visors.icgc.cat/catalunya-digital/carrers-3d/#/panorama?lat={self.pointWgs84.y()}&lon={self.pointWgs84.x()}", new=0, autoraise=True)
+
 
     def transformToWGS84(self, pPoint):
         # transformation from the current SRS to WGS84
@@ -599,6 +567,7 @@ class go2carrers3d(gui.QgsMapTool):
         xform = core.QgsCoordinateTransform(crsSrc, crsDest, core.QgsProject.instance())
         return xform.transform(pPoint) # forward transformation: src -> dest
 
+
     def transformToCurrentSRS(self, pPoint):
         # transformation from the current SRS to WGS84
         crcMappaCorrente = self.iface.mapCanvas().mapSettings().destinationCrs() # get current crs
@@ -606,6 +575,7 @@ class go2carrers3d(gui.QgsMapTool):
         crsSrc = core.QgsCoordinateReferenceSystem("EPSG:4326")  # WGS84
         xform = core.QgsCoordinateTransform(crsSrc, crsDest, core.QgsProject.instance())
         return xform.transform(pPoint) # forward transformation: src -> dest
+
 
     def canvasPressEvent(self, event):
         # Press event handler inherited from QgsMapTool used to store the given location in WGS84 long/lat
@@ -619,6 +589,7 @@ class go2carrers3d(gui.QgsMapTool):
         self.highlight.setWidth(5)
         self.PressedPoint = self.canvas.getCoordinateTransform().toMapCoordinates(self.pressx, self.pressy)
         self.pointWgs84 = self.transformToWGS84(self.PressedPoint)
+
 
     def canvasMoveEvent(self, event):
         # Moved event handler inherited from QgsMapTool needed to highlight the direction that is giving by the user
@@ -657,8 +628,9 @@ class go2carrers3d(gui.QgsMapTool):
         else:
             self.openSVDialog()
 
+
     def openSVDialog(self, show=True):
-        # procedure for compiling carrers3d and gmaps url with the given location and heading
+        # procedure for compiling carrers3d and carrers3d url with the given location and heading
         self.heading = math.trunc(self.heading)
         if show:
             self.view.setWindowTitle("Carrers3d")
@@ -666,26 +638,30 @@ class go2carrers3d(gui.QgsMapTool):
             self.view.show()
             self.apdockwidget.raise_()
             self.view.activateWindow()
-            self.view.BE.hide()
             self.view.SV.hide()
+        
         self.viewHeight=self.view.size().height()
         self.viewWidth=self.view.size().width()
 
+        # Update the plugin's internal point-of-view memory immediately
+        self.actualPOV['lat'] = self.pointWgs84.y()
+        self.actualPOV['lon'] = self.pointWgs84.x()
+        self.actualPOV['heading'] = self.heading
+
         route = f"#/info/mapiastreets/{self.pointWgs84.y()},{self.pointWgs84.x()}/{self.heading}/"
+
         self.gswDialogUrl = f"https://visors.icgc.cat/catalunya-digital/carrers-3d/{route}"
-        self.bbeUrl = self.gswDialogUrl
 
         gswTitle = "Carrers 3D"
         core.QgsMessageLog.logMessage(QtCore.QUrl(self.gswDialogUrl).toString(), tag="go2carrers3d", level=core.Qgis.Info)
-        core.QgsMessageLog.logMessage(self.bbeUrl, tag="go2carrers3d", level=core.Qgis.Info)
         self.httpConnecting = True
         self.view.SV.setUrl(QtCore.QUrl(QtCore.QDir.fromNativeSeparators(self.gswDialogUrl)))
-        self.view.BE.setUrl(QtCore.QUrl(QtCore.QDir.fromNativeSeparators(self.bbeUrl)))
         self.view.SV.show()
 
         self.syncTimer.start()
 
-    def StreetviewRun(self):
+
+    def Carrers3dRun(self):
         # called by click on toolbar icon
         if self.apdockwidget.isVisible():
             self.apdockwidget.hide()
@@ -693,18 +669,21 @@ class go2carrers3d(gui.QgsMapTool):
             self.apdockwidget.show()
             self.explore()
 
+
     def explore(self):
-        self.view.resized.connect(self.resizeStreetview)
+        self.view.resized.connect(self.resizeCarrers3d)
         gsvMessage="Click on map and drag the cursor to the desired direction to display Carrers 3D"
         self.iface.mainWindow().statusBar().showMessage(gsvMessage)
         self.dumLayer.setCrs(self.iface.mapCanvas().mapSettings().destinationCrs())
         self.canvas.setMapTool(self)
+
 
     def disableControlShape(self):
         try:
             self.controlShape.reset()
         except:
             pass
+
 
     def noSVConnectionsPending(self,reply):
         print ("finished loading SV")
@@ -719,6 +698,7 @@ class go2carrers3d(gui.QgsMapTool):
         else:
             core.QgsMessageLog.logMessage("STREETVIEW OTHER CONNECTION ERROR: {}".format(reply.error()), tag="go2carrers3d", level=core.Qgis.Critical)
 
+
     def noGMConnectionsPending(self, reply):
         if reply.error() == QtNetwork.QNetworkReply.NoError:
             pass
@@ -730,6 +710,7 @@ class go2carrers3d(gui.QgsMapTool):
         else:
             core.QgsMessageLog.logMessage("GM OTHER CONNECTION ERROR: {}".format(reply.error()), tag="go2carrers3d", level=core.Qgis.Critical)
 
+
     def loadFinishedAction(self,ok):
         if ok:
             core.QgsMessageLog.logMessage("Finished loading", tag="go2carrers3d", level=core.Qgis.Info)
@@ -737,11 +718,3 @@ class go2carrers3d(gui.QgsMapTool):
         else:
             core.QgsMessageLog.logMessage("Failed loading", tag="go2carrers3d", level=core.Qgis.Critical)
             pass
-
-    def setupInspector(self):
-        print ("setupInspector")
-        return
-        self.page = self.view.SV.page()
-        self.page.settings().setAttribute(QtWebKit.QWebSettings.DeveloperExtrasEnabled, True)
-        self.webInspector = QtWebKitWidgets.QWebInspector(self)
-        self.webInspector.setPage(self.page)

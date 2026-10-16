@@ -4,6 +4,13 @@ A QGIS plugin for [ICGC Carrers 3D](https://visors.icgc.cat/catalunya-digital/ca
 
 Forked from [go2streetview](https://github.com/enricofer/go2streetview).
 
+## Usage
+
+In order to find the covered area, do the following:
+
+1. Click menu icon on Carrers 3D Panel > Opcions > Mostrar capa Carrers 3D
+2. Click menu icon on Carrers 3D Panel > Opcions > Zoom a la capa
+
 ## Dependencies
 
 The plugin depends on QtWebEngine, which isn't installed by default with QGIS. We defined QPIP as dependency using requirements.txt in order to preinstall PyQtWebEngine.
