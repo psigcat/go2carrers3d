@@ -19,23 +19,15 @@
  ***************************************************************************/
 """
 from qgis.PyQt.QtWidgets import QApplication
-from qgis.PyQt import Qt, QtCore, QtWidgets, QtGui, QtWebEngineWidgets, QtNetwork
-from qgis.PyQt.QtCore import QSettings, qVersion, QCoreApplication, Qt
-from qgis.PyQt.QtCore import pyqtSlot
+from qgis.PyQt import QtCore, QtWidgets, QtGui, QtNetwork
+from qgis.PyQt.QtCore import QSettings, qVersion, QCoreApplication, Qt, pyqtSlot
 from qgis import core, utils, gui
 from qgis.utils import iface, qgsfunction, plugins
-from string import digits
+
 from .go2carrers3dDialog import go2carrers3dDialog, dumWidget
 from .transformgeom import transformGeometry
 
-try:
-    from qgis.PyQt.QtWebChannel import QWebChannel
-except ImportError:
-    try:
-        from PyQt6.QtWebChannel import QWebChannel
-    except ImportError:
-        from PyQt5.QtWebChannel import QWebChannel
-
+from string import digits
 import webbrowser
 import os
 import math
@@ -45,7 +37,32 @@ import configparser
 import datetime
 import re
 
+# Use the Qt binding supplied by QGIS. Never fall back to a different Qt major.
+from qgis.PyQt.QtCore import QT_VERSION_STR
+from qgis.PyQt.QtWebEngineWidgets import QWebEngineView
+
+try:
+    from qgis.PyQt.QtWebChannel import QWebChannel
+except ImportError:
+    try:
+        from PyQt6.QtWebChannel import QWebChannel
+    except ImportError:
+        from PyQt5.QtWebChannel import QWebChannel
+
+if int(QT_VERSION_STR.split('.')[0]) >= 6:
+    from qgis.PyQt.QtWebEngineCore import QWebEngineSettings
+else:
+    from qgis.PyQt.QtWebEngineWidgets import QWebEngineSettings
+
 H_SV_CAMERA = 2.7
+
+
+def web_attr(attr):
+    # Qt6
+    if hasattr(QWebEngineSettings, "WebAttribute"):
+        return getattr(QWebEngineSettings.WebAttribute, attr)
+    # Qt5
+    return getattr(QWebEngineSettings, attr)
 
 
 class go2carrers3d(gui.QgsMapTool):
@@ -117,10 +134,10 @@ class go2carrers3d(gui.QgsMapTool):
         self.channel.registerObject('backend', self)
         self.view.SV.page().setWebChannel(self.channel)
 
-        self.view.SV.settings().setAttribute(QtWebEngineWidgets.QWebEngineSettings.JavascriptEnabled, True)
-        self.view.SV.settings().setAttribute(QtWebEngineWidgets.QWebEngineSettings.LocalContentCanAccessRemoteUrls, True)
-        self.view.SV.settings().setAttribute(QtWebEngineWidgets.QWebEngineSettings.ErrorPageEnabled, True)
-        self.view.SV.settings().setAttribute(QtWebEngineWidgets.QWebEngineSettings.PluginsEnabled, True)
+        self.view.SV.settings().setAttribute(web_attr("JavascriptEnabled"), True)
+        self.view.SV.settings().setAttribute(web_attr("LocalContentCanAccessRemoteUrls"), True)
+        self.view.SV.settings().setAttribute(web_attr("ErrorPageEnabled"), True)
+        self.view.SV.settings().setAttribute(web_attr("PluginsEnabled"), True)
 
         self.view.SV.loadFinished.connect(self.handleLoaded)
 
