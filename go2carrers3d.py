@@ -1,23 +1,3 @@
-"""
-/***************************************************************************
- go2carrers3d
-                                 A QGIS plugin
-                              -------------------
-        begin                : 2014-03-29
-        copyright            : (C) 2014 enrico ferreguti
-                             : (C) 2026 gerald kogler
-        email                : enricofer@gmail.com
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
 from qgis.PyQt.QtWidgets import QApplication, QMenu, QToolButton, QDockWidget
 from qgis.PyQt.QtNetwork import QNetworkRequest, QNetworkReply
 from qgis.PyQt.QtCore import QSettings, QSettings, QUrl, QTimer, QDir, qVersion, QCoreApplication, Qt, pyqtSlot, QT_VERSION_STR
@@ -413,14 +393,15 @@ class go2carrers3d(gui.QgsMapTool):
         if match:
             lat = float(match.group(1))
             lon = float(match.group(2))
-            heading = float(match.group(3))
+            # Invert the heading so the QGIS marker turns in the correct direction
+            heading = (360 - float(match.group(3)) + 90) % 360
         else:
             return # URL format doesn't match, do nothing
 
-        # Only update if the camera actually moved to avoid jitter
-        if (self.actualPOV.get('lat') == lat and 
-            self.actualPOV.get('lon') == lon and 
-            self.actualPOV.get('heading') == heading):
+        # Use a tolerance check for floats to avoid freezing/jittering
+        if (abs(self.actualPOV.get('lat', 0) - lat) < 0.00001 and 
+            abs(self.actualPOV.get('lon', 0) - lon) < 0.00001 and 
+            abs(self.actualPOV.get('heading', 0) - heading) < 0.5):
             return
 
         # Format the data exactly how the original plugin expects it
@@ -433,7 +414,6 @@ class go2carrers3d(gui.QgsMapTool):
             "pitch": 0
         }
         
-        # Feed it into the original logic to move the QGIS marker and cone!
         self.catchJSevents(json.dumps(tmpPOV))
 
 
@@ -534,6 +514,7 @@ class go2carrers3d(gui.QgsMapTool):
             self.actualPOV['lat'] = new_lat
             self.actualPOV['lon'] = new_lon
             self.actualPOV['heading'] = self.heading
+            self.setPosition()
             
             route = f"#/info/mapiastreets/{new_lat},{new_lon}/{self.heading}/"
 
@@ -671,6 +652,7 @@ class go2carrers3d(gui.QgsMapTool):
         self.actualPOV['lat'] = self.pointWgs84.y()
         self.actualPOV['lon'] = self.pointWgs84.x()
         self.actualPOV['heading'] = self.heading
+        self.setPosition()
 
         route = f"#/info/mapiastreets/{self.pointWgs84.y()},{self.pointWgs84.x()}/{self.heading}/"
 
