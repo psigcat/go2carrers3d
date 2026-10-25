@@ -3,7 +3,7 @@ name=go2carrers3d
 qgisMinimumVersion=3.36
 qgisMaximumVersion=4.99
 description=The plugin allows to get a window with Catalunya Digital Carrers 3D clicking and dragging the cursor on map to set location and direction of the desired view.
-version=0.1
+version=0.2
 author=PSIG
 email=geraldo@servus.at
 license=GPL-3.0-or-later
@@ -19,4 +19,5 @@ experimental=False
 deprecated=False
 
 changelog=
+	0.2 - fix rotation (#3), make Qt6/QGIS4 compatible (#4)
 	0.1 - initial commit forked from go2streetview
