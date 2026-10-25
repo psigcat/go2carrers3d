@@ -20,12 +20,13 @@ go2carrers3d
  ***************************************************************************/
 """
 
-from qgis.PyQt import Qt, QtCore, QtWidgets, QtGui, uic
+from qgis.PyQt.QtCore import Qt, pyqtSignal
+from qgis.PyQt.QtWidgets import QDialog, QDockWidget
+from qgis.PyQt import uic
 from qgis import core, utils, gui
 
 import json
 import os
-#import html.parser as HTMLParser
 import html
 import xml.sax.saxutils
 import resources_rc
@@ -38,15 +39,15 @@ DUM_DIALOG_CLASS, _ = uic.loadUiType(os.path.join(
 
 
 # create the view dialog
-class go2carrers3dDialog(QtWidgets.QDockWidget, MAIN_DIALOG_CLASS):
+class go2carrers3dDialog(QDockWidget, MAIN_DIALOG_CLASS):
 
-    focus_in = QtCore.pyqtSignal(int, name='focusIn')
-    closed_ev = QtCore.pyqtSignal(int, name='closed')
-    resized_ev = QtCore.pyqtSignal(int, name='resized')
-    enter_ev = QtCore.pyqtSignal(int, name='enter')
+    focus_in = pyqtSignal(int, name='focusIn')
+    closed_ev = pyqtSignal(int, name='closed')
+    resized_ev = pyqtSignal(int, name='resized')
+    enter_ev = pyqtSignal(int, name='enter')
 
     def __init__(self):
-        QtWidgets.QDialog.__init__(self)
+        QDialog.__init__(self)
         self.setupUi(self)
 
     def closeEvent(self, event):
@@ -62,12 +63,12 @@ class go2carrers3dDialog(QtWidgets.QDockWidget, MAIN_DIALOG_CLASS):
         self.enter_ev.emit(1)
 
 # create the dummy widget
-class dumWidget(QtWidgets.QDialog, DUM_DIALOG_CLASS):
+class dumWidget(QDialog, DUM_DIALOG_CLASS):
 
-    enter_ev = QtCore.pyqtSignal(int, name='enter')
+    enter_ev = pyqtSignal(int, name='enter')
 
     def __init__(self):
-        QtWidgets.QDialog.__init__(self)
+        QDialog.__init__(self)
         self.setupUi(self)
 
     def enterEvent (self,event):

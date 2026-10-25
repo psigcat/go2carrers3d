@@ -18,11 +18,36 @@
  *                                                                         *
  ***************************************************************************/
 """
-from qgis.PyQt.QtWidgets import QApplication
-from qgis.PyQt import QtCore, QtWidgets, QtGui, QtNetwork
-from qgis.PyQt.QtCore import QSettings, qVersion, QCoreApplication, Qt, pyqtSlot
+from qgis.PyQt.QtWidgets import QApplication, QMenu, QToolButton, QDockWidget
+from qgis.PyQt.QtNetwork import QNetworkRequest, QNetworkReply
+from qgis.PyQt.QtCore import QSettings, QSettings, QUrl, QTimer, QDir, qVersion, QCoreApplication, Qt, pyqtSlot, QT_VERSION_STR
+from qgis.PyQt.QtGui import QIcon, QPixmap, QColor
 from qgis import core, utils, gui
 from qgis.utils import iface, qgsfunction, plugins
+
+if int(QT_VERSION_STR.split('.')[0]) >= 6:
+    from qgis.PyQt.QtWebEngineCore import QWebEngineSettings
+else:
+    try:
+        from qgis.PyQt.QtWebEngineWidgets import QWebEngineSettings
+    except ImportError:
+        from qgis.PyQt.QtWidgets import QMessageBox
+        
+        error_msg = (
+            "The 'QtWebEngineWidgets' module is missing, to install it on Windows: \n"
+            "1. Close QGIS.\n"
+            "2. Open the 'OSGeo4W Setup' as Administrator from the Start Menu.\n"
+            "3. Install the package 'python3-pyqtwebengine'.\n\n"
+            "Restart QGIS after the installation completes."
+        )
+        
+        QMessageBox.critical(None, "go2carrers3d: Missing Dependency", error_msg)
+        raise ImportError("QtWebEngineWidgets is not installed")
+
+try:
+    from qgis.PyQt.QtWidgets import QAction
+except ImportError:
+    from qgis.PyQt.QtGui import QAction
 
 from .go2carrers3dDialog import go2carrers3dDialog, dumWidget
 from .transformgeom import transformGeometry
@@ -37,10 +62,6 @@ import configparser
 import datetime
 import re
 
-# Use the Qt binding supplied by QGIS. Never fall back to a different Qt major.
-from qgis.PyQt.QtCore import QT_VERSION_STR
-from qgis.PyQt.QtWebEngineWidgets import QWebEngineView
-
 try:
     from qgis.PyQt.QtWebChannel import QWebChannel
 except ImportError:
@@ -48,11 +69,6 @@ except ImportError:
         from PyQt6.QtWebChannel import QWebChannel
     except ImportError:
         from PyQt5.QtWebChannel import QWebChannel
-
-if int(QT_VERSION_STR.split('.')[0]) >= 6:
-    from qgis.PyQt.QtWebEngineCore import QWebEngineSettings
-else:
-    from qgis.PyQt.QtWebEngineWidgets import QWebEngineSettings
 
 H_SV_CAMERA = 2.7
 
@@ -86,7 +102,7 @@ class go2carrers3d(gui.QgsMapTool):
             'go2carrers3d_{}.qm'.format(locale))
 
         gui.QgsMapTool.__init__(self, self.canvas)
-        self.S = QtCore.QSettings()
+        self.S = QSettings()
 
 
     def tr(self, message):  # pylint: disable=no-self-use
@@ -106,9 +122,9 @@ class go2carrers3d(gui.QgsMapTool):
 
     def initGui(self):
         # Create actions that will start plugin configuration
-        self.Carrers3dAction = QtWidgets.QAction(QtGui.QIcon(os.path.join(os.path.dirname(__file__), 'res', 'icoStreetview.png')), \
+        self.Carrers3dAction = QAction(QIcon(os.path.join(os.path.dirname(__file__), 'res', 'icoStreetview.png')), \
             self.tr("Obrir panell Carrers 3D"), self.iface.mainWindow())
-        #self.Carrers3dAction = QtWidgets.QAction(QtGui.QIcon(":/plugins/go2carrers3d/res/icoStreetview.png"), \
+        #self.Carrers3dAction = QAction(QIcon(":/plugins/go2carrers3d/res/icoStreetview.png"), \
         self.Carrers3dAction.triggered.connect(self.Carrers3dRun)
         # Add toolbar button and menu item
         self.iface.addToolBarIcon(self.Carrers3dAction)
@@ -118,13 +134,18 @@ class go2carrers3d(gui.QgsMapTool):
         self.view = go2carrers3dDialog()
         self.dumView = dumWidget()
         self.dumView.enter.connect(self.clickOn)
-        self.dumView.iconRif.setPixmap(QtGui.QPixmap(os.path.join(os.path.dirname(__file__), 'res', 'icoStreetview.png')))
-        #self.dumView.iconRif.setPixmap(QtGui.QPixmap(":/plugins/go2carrers3d/res/icoStreetview.png"))
-        self.apdockwidget=QtWidgets.QDockWidget(self.tr("go2carrers3d") , self.iface.mainWindow() )
-        #self.apdockwidget.
+        self.dumView.iconRif.setPixmap(QPixmap(os.path.join(os.path.dirname(__file__), 'res', 'icoStreetview.png')))
+        #self.dumView.iconRif.setPixmap(QPixmap(":/plugins/go2carrers3d/res/icoStreetview.png"))
+
+        # Initialize a timer to poll the Carrers 3D URL for coordinate/heading changes
+        self.syncTimer = QTimer(self.iface.mainWindow())
+        self.syncTimer.setInterval(250) # Check every 250 milliseconds
+        self.syncTimer.timeout.connect(self.pollCarrers3D)
+
+        self.apdockwidget=QDockWidget(self.tr("go2carrers3d") , self.iface.mainWindow() )
         self.apdockwidget.setObjectName("go2carrers3d")
         self.apdockwidget.setWidget(self.dumView)
-        self.iface.addDockWidget( QtCore.Qt.LeftDockWidgetArea, self.apdockwidget)
+        self.iface.addDockWidget( Qt.DockWidgetArea.LeftDockWidgetArea, self.apdockwidget)
         self.apdockwidget.update()
 
         self.viewHeight=self.apdockwidget.size().height()
@@ -133,12 +154,12 @@ class go2carrers3d(gui.QgsMapTool):
         self.channel = QWebChannel()
         self.channel.registerObject('backend', self)
         self.view.SV.page().setWebChannel(self.channel)
+        self.aperture=gui.QgsRubberBand(self.iface.mapCanvas(),core.QgsWkbTypes.LineGeometry )
 
         self.view.SV.settings().setAttribute(web_attr("JavascriptEnabled"), True)
         self.view.SV.settings().setAttribute(web_attr("LocalContentCanAccessRemoteUrls"), True)
         self.view.SV.settings().setAttribute(web_attr("ErrorPageEnabled"), True)
         self.view.SV.settings().setAttribute(web_attr("PluginsEnabled"), True)
-
         self.view.SV.loadFinished.connect(self.handleLoaded)
 
         self.view.enter.connect(self.clickOn)
@@ -154,13 +175,12 @@ class go2carrers3d(gui.QgsMapTool):
         self.position.setWidth( 5 )
         self.position.setIcon(gui.QgsRubberBand.ICON_CIRCLE)
         self.position.setIconSize(6)
-        self.position.setColor(QtCore.Qt.red)
-        self.aperture=gui.QgsRubberBand(self.iface.mapCanvas(),core.QgsWkbTypes.LineGeometry )
+        self.position.setColor(QColor("red"))
 
         self.digitizePosition=gui.QgsRubberBand(self.iface.mapCanvas(),core.QgsWkbTypes.PointGeometry )
         self.digitizePosition.setIcon(gui.QgsRubberBand.ICON_CIRCLE)
         self.digitizePosition.setIconSize(6)
-        self.digitizePosition.setColor(QtCore.Qt.green)
+        self.digitizePosition.setColor(QColor("green"))
 
         self.rotateTool = transformGeometry()
         self.canvas.rotationChanged.connect(self.mapRotationChanged)
@@ -169,11 +189,6 @@ class go2carrers3d(gui.QgsMapTool):
         self.actualPOV = {"lat":0.0,"lon":0.0,"heading":0.0,"zoom":1,"pitch":0}
         self.pointWgs84 = None
         self.httpConnecting = None
-
-        # Initialize a timer to poll the Carrers 3D URL for coordinate/heading changes
-        self.syncTimer = QtCore.QTimer(self.iface.mainWindow())
-        self.syncTimer.setInterval(250) # Check every 250 milliseconds
-        self.syncTimer.timeout.connect(self.pollCarrers3D)
 
 
     def handleLoaded(self, ok):
@@ -211,8 +226,8 @@ class go2carrers3d(gui.QgsMapTool):
 
     def setButtonBarSignals(self):
         #contextMenu
-        contextMenu = QtWidgets.QMenu()
-        self.openInBrowserItem = contextMenu.addAction(QtGui.QIcon(os.path.join(self.dirPath,"res","browser.png")),self.tr("Obrir al navegador extern"))
+        contextMenu = QMenu()
+        self.openInBrowserItem = contextMenu.addAction(QIcon(os.path.join(self.dirPath,"res","browser.png")),self.tr("Obrir al navegador extern"))
         self.openInBrowserItem.triggered.connect(self.openInBrowserAction)
         contextMenu.addSeparator()
         
@@ -225,9 +240,9 @@ class go2carrers3d(gui.QgsMapTool):
         optionsMenu.addSeparator()
 
         self.showCoverage.toggled.connect(self.showCoverageLayer)
-        self.view.btnMenu.setIcon(QtGui.QIcon(os.path.join(self.dirPath,"res","down.png")))
+        self.view.btnMenu.setIcon(QIcon(os.path.join(self.dirPath,"res","down.png")))
         self.view.btnMenu.setMenu(contextMenu)
-        self.view.btnMenu.setPopupMode(QtWidgets.QToolButton.InstantPopup)
+        self.view.btnMenu.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
 
 
     def showCoverageLayer(self): 
@@ -305,7 +320,7 @@ class go2carrers3d(gui.QgsMapTool):
         while not (self.SVLocationResponse or timeout):
             time.sleep(0.2)
             tdiff = datetime.datetime.now()-start
-            QtWidgets.QApplication.processEvents()
+            QApplication.processEvents()
             if tdiff.seconds > delay:
                 timeout = True
         return self.SVLocationResponse
@@ -437,7 +452,7 @@ class go2carrers3d(gui.QgsMapTool):
         self.position.setWidth( 4 )
         self.position.setIcon(gui.QgsRubberBand.ICON_CIRCLE)
         self.position.setIconSize(4)
-        self.position.setColor(QtCore.Qt.blue)
+        self.position.setColor(QColor("blue"))
         self.position.addPoint(actualSRS)
         CS = self.canvas.mapUnitsPerPixel()*25
         zoom = float(self.actualPOV['zoom'])
@@ -450,7 +465,7 @@ class go2carrers3d(gui.QgsMapTool):
         self.aperture.reset()
         self.aperture=gui.QgsRubberBand(self.iface.mapCanvas(),core.QgsWkbTypes.LineGeometry )
         self.aperture.setWidth( 3 )
-        self.aperture.setColor(QtCore.Qt.blue)
+        self.aperture.setColor(QColor("blue"))
         self.aperture.addPoint(core.QgsPointXY(A1x,A1y))
         self.aperture.addPoint(actualSRS)
         self.aperture.addPoint(core.QgsPointXY(A2x,A2y))
@@ -465,7 +480,7 @@ class go2carrers3d(gui.QgsMapTool):
             self.digitizePosition=gui.QgsRubberBand(self.iface.mapCanvas(),core.QgsWkbTypes.PointGeometry )
             self.digitizePosition.setIcon(gui.QgsRubberBand.ICON_CIRCLE)
             self.digitizePosition.setIconSize(6)
-            self.digitizePosition.setColor(QtCore.Qt.green)
+            self.digitizePosition.setColor(QColor("green"))
             self.digitizePosition.addPoint(core.QgsPointXY(actualSRS.x(),actualSRS.y()+POV_distance))
             self.digitizePosition.setToGeometry(self.rotateTool.rotate(self.digitizePosition.asGeometry(),actualSRS,angle))
             dlonlat = self.transformToWGS84(self.digitizePosition.asGeometry().asPoint())
@@ -491,14 +506,14 @@ class go2carrers3d(gui.QgsMapTool):
             self.disableControlShape()
             self.syncTimer.stop()
             try:
-                self.Carrers3dAction.setIcon(QtGui.QIcon(os.path.join(os.path.dirname(__file__), 'res', 'icoStreetview_gray.png')))
+                self.Carrers3dAction.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'res', 'icoStreetview_gray.png')))
             except:
                 pass
 
         else:
             self.Carrers3dAction.setEnabled(True)
             self.syncTimer.start()
-            self.Carrers3dAction.setIcon(QtGui.QIcon(os.path.join(os.path.dirname(__file__), 'res', 'icoStreetview.png')))
+            self.Carrers3dAction.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'res', 'icoStreetview.png')))
             self.setPosition()
 
 
@@ -523,7 +538,7 @@ class go2carrers3d(gui.QgsMapTool):
             route = f"#/info/mapiastreets/{new_lat},{new_lon}/{self.heading}/"
 
             self.gswDialogUrl = f"https://visors.icgc.cat/catalunya-digital/carrers-3d/{route}"
-            self.view.SV.setUrl(QtCore.QUrl(self.gswDialogUrl))
+            self.view.SV.setUrl(QUrl(self.gswDialogUrl))
 
 
     def endRefreshWidget(self):
@@ -589,7 +604,7 @@ class go2carrers3d(gui.QgsMapTool):
         self.movex = event.pos().x()
         self.movey = event.pos().y()
         self.highlight=gui.QgsRubberBand(self.iface.mapCanvas(),core.QgsWkbTypes.LineGeometry )
-        self.highlight.setColor(QtCore.Qt.yellow)
+        self.highlight.setColor(QColor("yellow"))
         self.highlight.setWidth(5)
         self.PressedPoint = self.canvas.getCoordinateTransform().toMapCoordinates(self.pressx, self.pressy)
         self.pointWgs84 = self.transformToWGS84(self.PressedPoint)
@@ -609,7 +624,12 @@ class go2carrers3d(gui.QgsMapTool):
     def canvasReleaseEvent(self, event):
         # Release event handler inherited from QgsMapTool needed to calculate heading
         event.modifiers()
-        if (event.modifiers() & QtCore.Qt.ControlModifier):
+        try:
+            ctrl_modifier = Qt.KeyboardModifier.ControlModifier
+        except AttributeError:
+            ctrl_modifier = Qt.ControlModifier
+
+        if (event.modifiers() & ctrl_modifier):
             CTRLPressed = True
         else:
             CTRLPressed = None
@@ -656,9 +676,9 @@ class go2carrers3d(gui.QgsMapTool):
 
         self.gswDialogUrl = f"https://visors.icgc.cat/catalunya-digital/carrers-3d/{route}"
 
-        core.QgsMessageLog.logMessage(QtCore.QUrl(self.gswDialogUrl).toString(), tag="go2carrers3d", level=core.Qgis.Info)
+        core.QgsMessageLog.logMessage(QUrl(self.gswDialogUrl).toString(), tag="go2carrers3d", level=core.Qgis.Info)
         self.httpConnecting = True
-        self.view.SV.setUrl(QtCore.QUrl(QtCore.QDir.fromNativeSeparators(self.gswDialogUrl)))
+        self.view.SV.setUrl(QUrl(QDir.fromNativeSeparators(self.gswDialogUrl)))
         self.view.SV.show()
 
         self.syncTimer.start()
@@ -691,24 +711,24 @@ class go2carrers3d(gui.QgsMapTool):
     def noSVConnectionsPending(self,reply):
         print ("finished loading SV")
         self.httpConnecting = None
-        if reply.error() == QtNetwork.QNetworkReply.NoError:
+        if reply.error() == QNetworkReply.NoError:
             pass
-        elif reply.error() == QtNetwork.QNetworkReply.ContentNotFoundError:
+        elif reply.error() == QNetworkReply.ContentNotFoundError:
             failedUrl = reply.request.url()
-            httpStatus = reply.attribute(QtNetwork.QNetworkRequest.HttpStatusCodeAttribute).toInt()
-            httpStatusMessage = reply.attribute(QtNetwork.QNetworkRequest.HttpReasonPhraseAttribute).toByteArray()
+            httpStatus = reply.attribute(QNetworkRequest.HttpStatusCodeAttribute).toInt()
+            httpStatusMessage = reply.attribute(QNetworkRequest.HttpReasonPhraseAttribute).toByteArray()
             core.QgsMessageLog.logMessage("STREETVIEW FAILED REQUEST: {} {} {}".format(failedUrl,httpStatus,httpStatusMessage), tag="go2carrers3d", level=core.Qgis.Critical)
         else:
             core.QgsMessageLog.logMessage("STREETVIEW OTHER CONNECTION ERROR: {}".format(reply.error()), tag="go2carrers3d", level=core.Qgis.Critical)
 
 
     def noGMConnectionsPending(self, reply):
-        if reply.error() == QtNetwork.QNetworkReply.NoError:
+        if reply.error() == QNetworkReply.NoError:
             pass
-        elif reply.error() == QtNetwork.QNetworkReply.ContentNotFoundError:
+        elif reply.error() == QNetworkReply.ContentNotFoundError:
             failedUrl = reply.request.url()
-            httpStatus = reply.attribute(QtNetwork.QNetworkRequest.HttpStatusCodeAttribute).toInt()
-            httpStatusMessage = reply.attribute(QtNetwork.QNetworkRequest.HttpReasonPhraseAttribute).toByteArray()
+            httpStatus = reply.attribute(QNetworkRequest.HttpStatusCodeAttribute).toInt()
+            httpStatusMessage = reply.attribute(QNetworkRequest.HttpReasonPhraseAttribute).toByteArray()
             core.QgsMessageLog.logMessage("GM FAILED REQUEST: {} {} {}".format(failedUrl,httpStatus,httpStatusMessage), tag="go2carrers3d", level=core.Qgis.Critical)
         else:
             core.QgsMessageLog.logMessage("GM OTHER CONNECTION ERROR: {}".format(reply.error()), tag="go2carrers3d", level=core.Qgis.Critical)
